@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Learning to Label: A Reinforced Self-Evolving Framework for Semi-supervised Referring Expression Segmentation. ICML 2026.">
+  <title>Learning to Label | ICML 2026</title>
+  <style>
+    :root {
+      --primary: #2f4f4a;
+      --primary-deep: #1f2f2f;
+      --accent: #7a8f88;
+      --accent-soft: #eaf3ef;
+      --paper: #ffffff;
+      --surface: #fbf7f1;
+      --surface-strong: #edf6f3;
+      --soft-blue: #eaf4fb;
+      --soft-green: #eef7e9;
+      --soft-purple: #f5eff9;
+      --soft-yellow: #fff6d8;
+      --text: #202020;
+      --muted: #555555;
+      --line: #2a2a2a;
+      --soft-line: #cfd7d4;
+      --shadow-sm: none;
+      --shadow-md: none;
+      --shadow-xl: none;
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --transition: all 0.25s ease;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: Georgia, "Times New Roman", Times, serif;
+      color: var(--text);
+      background: var(--paper);
+      line-height: 1.62;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    .container {
+      width: min(1160px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .container-narrow {
+      width: min(980px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--soft-line);
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(8px);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      gap: 1rem;
+    }
+
+    .brand {
+      font-weight: 800;
+      color: var(--primary-deep);
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    .nav-links a:hover {
+      color: var(--primary);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 4.8rem 0 4rem;
+      text-align: center;
+      background: var(--paper);
+      border-bottom: 2px solid var(--line);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.8rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      background: var(--soft-yellow);
+      box-shadow: var(--shadow-sm);
+      font-size: 0.9rem;
+      font-weight: 800;
+      margin-bottom: 1.5rem;
+    }
+
+    .badge::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text);
+      box-shadow: none;
+    }
+
+    .hero-title {
+      max-width: 1040px;
+      margin: 0 auto 1.25rem;
+      font-size: clamp(2.2rem, 4.6vw, 4rem);
+      line-height: 1.12;
+      font-weight: 800;
+      letter-spacing: 0;
+      color: var(--primary-deep);
+    }
+
+    .hero-title .soft {
+      color: var(--primary-deep);
+    }
+
+    .hero-subtitle {
+      max-width: 780px;
+      margin: 0 auto 1.6rem;
+      color: var(--muted);
+      font-size: clamp(1.05rem, 2vw, 1.25rem);
+      font-weight: 400;
+    }
+
+    .authors {
+      max-width: 940px;
+      margin: 0 auto 0.7rem;
+      color: var(--text);
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .authors a {
+      display: inline-block;
+      margin: 0.16rem 0.42rem;
+      border-bottom: 1px solid transparent;
+    }
+
+    .authors a:hover {
+      border-color: currentColor;
+    }
+
+    .affiliations {
+      color: var(--muted);
+      font-size: 0.98rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn-group {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      margin: 1.8rem 0 0;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55rem;
+      min-height: 44px;
+      padding: 0.72rem 1.15rem;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+    }
+
+    .btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .btn-primary {
+      color: var(--text);
+      background: var(--soft-green);
+      border-color: var(--line);
+    }
+
+    .btn-primary:hover {
+      background: #e0f0da;
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-outline {
+      color: var(--primary-deep);
+      background: #fbfaf7;
+      border-color: var(--line);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--line);
+      color: var(--text);
+      box-shadow: var(--shadow-md);
+    }
+
+    .teaser-wrap {
+      margin-top: 3.25rem;
+      padding: 1rem;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow-xl);
+    }
+
+    .teaser-inner {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+      align-items: center;
+      text-align: center;
+    }
+
+    .paper-preview {
+      width: 100%;
+      max-height: 540px;
+      object-fit: contain;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--soft-line);
+      background: #fffdf9;
+      box-shadow: none;
+    }
+
+    .hero-figures {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .teaser-copy h2 {
+      font-size: clamp(1.45rem, 3vw, 2.2rem);
+      line-height: 1.18;
+      margin-bottom: 0.8rem;
+      color: var(--text);
+    }
+
+    .teaser-copy p {
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .section {
+      padding: 4.8rem 0;
+    }
+
+    .section-alt {
+      background: #fbfaf7;
+      border-top: 1px solid var(--soft-line);
+      border-bottom: 1px solid var(--soft-line);
+    }
+
+    .section-header {
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .section-title {
+      display: inline-block;
+      position: relative;
+      color: var(--text);
+      font-size: clamp(1.8rem, 3vw, 2.45rem);
+      line-height: 1.15;
+      font-weight: 800;
+    }
+
+    .section-title::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -0.72rem;
+      width: 46px;
+      height: 2px;
+      border-radius: 0;
+      transform: translateX(-50%);
+      background: var(--line);
+    }
+
+    .abstract-grid {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 2.4rem;
+      align-items: start;
+    }
+
+    .abstract-text {
+      color: var(--muted);
+      font-size: 1.08rem;
+      line-height: 1.85;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: white;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .highlights {
+      display: grid;
+      gap: 0.9rem;
+    }
+
+    .highlight-card {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 1rem;
+      padding: 1.15rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+    }
+
+    .highlight-card:nth-child(1) {
+      background: var(--soft-green);
+    }
+
+    .highlight-card:nth-child(2) {
+      background: var(--soft-blue);
+    }
+
+    .highlight-card:nth-child(3) {
+      background: var(--soft-purple);
+    }
+
+    .highlight-card:hover {
+      border-color: var(--line);
+      box-shadow: var(--shadow-md);
+    }
+
+    .highlight-icon {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.65);
+    }
+
+    .highlight-icon svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .highlight-card h3 {
+      font-size: 1.03rem;
+      margin-bottom: 0.2rem;
+      color: var(--text);
+    }
+
+    .highlight-card p {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.9rem;
+      margin-top: 0.9rem;
+    }
+
+    .stat {
+      padding: 1.3rem 1rem;
+      border-radius: var(--radius-md);
+      text-align: center;
+      color: var(--text);
+      background: var(--soft-yellow);
+      border: 1px solid var(--line);
+    }
+
+    .stat-value {
+      display: block;
+      color: var(--text);
+      font-size: 1.85rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 0.45rem;
+    }
+
+    .stat-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      opacity: 0.92;
+    }
+
+    .method-list {
+      display: grid;
+      gap: 2.4rem;
+    }
+
+    .method-title {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      margin-bottom: 1.1rem;
+      color: var(--text);
+      font-size: 1.28rem;
+      font-weight: 800;
+    }
+
+    .method-title::before {
+      content: "";
+      width: 8px;
+      height: 26px;
+      border-radius: 0;
+      background: var(--line);
+      flex: 0 0 auto;
+    }
+
+    .image-card {
+      overflow: hidden;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: #fffdf9;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+    }
+
+    .image-card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .image-card img {
+      width: 100%;
+      border-radius: var(--radius-md);
+      background: var(--surface);
+    }
+
+    .pdf-frame {
+      display: block;
+      width: 100%;
+      height: min(72vw, 760px);
+      border: 0;
+      border-radius: var(--radius-md);
+      background: var(--surface);
+    }
+
+    .analysis-card .pdf-frame {
+      height: min(72vw, 760px);
+    }
+
+    .results-grid {
+      display: grid;
+      gap: 2.2rem;
+    }
+
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.35rem;
+      align-items: start;
+    }
+
+    .analysis-grid.vertical {
+      grid-template-columns: 1fr;
+      gap: 1.35rem;
+    }
+
+    .analysis-card h4 {
+      color: var(--text);
+      font-size: 1rem;
+      margin: 0 0 0.75rem;
+      text-align: center;
+    }
+
+    .resource-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .resource-card {
+      padding: 1.25rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: #fffdf9;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+    }
+
+    .resource-card:hover {
+      border-color: var(--line);
+      box-shadow: var(--shadow-md);
+    }
+
+    .resource-card svg {
+      width: 28px;
+      height: 28px;
+      color: var(--text);
+      margin-bottom: 0.9rem;
+    }
+
+    .resource-card h3 {
+      color: var(--text);
+      font-size: 1.08rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .resource-card p {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .citation {
+      color: var(--text);
+      background: white;
+      border-top: 2px solid var(--line);
+    }
+
+    .citation .section-title {
+      color: var(--text);
+    }
+
+    .citation-box {
+      margin-top: 2.2rem;
+      overflow: hidden;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      background: #fffdf9;
+      text-align: left;
+    }
+
+    .citation-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.95rem 1.2rem;
+      border-bottom: 1px solid var(--soft-line);
+      background: var(--soft-blue);
+    }
+
+    .copy-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 0.45rem 0.8rem;
+      color: var(--text);
+      background: transparent;
+      cursor: pointer;
+      font-weight: 700;
+      transition: var(--transition);
+    }
+
+    .copy-btn:hover,
+    .copy-btn.copied {
+      border-color: var(--accent);
+      color: var(--text);
+      background: var(--surface);
+    }
+
+    .citation pre {
+      overflow-x: auto;
+      padding: 1.3rem;
+      color: var(--text);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      white-space: pre-wrap;
+    }
+
+    .footer {
+      padding: 2rem 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      text-align: center;
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 900px) {
+      .teaser-inner,
+      .abstract-grid,
+      .analysis-grid,
+      .hero-figures {
+        grid-template-columns: 1fr;
+      }
+
+      .teaser-inner {
+        text-align: center;
+      }
+
+      .paper-preview {
+        max-width: 100%;
+        margin: 0 auto;
+      }
+
+      .pdf-frame,
+      .analysis-card .pdf-frame {
+        height: min(115vw, 620px);
+      }
+
+      .nav-links {
+        display: none;
+    }
+
+    @media (max-width: 640px) {
+      .container,
+      .container-narrow {
+        width: min(100% - 28px, 1160px);
+      }
+
+      .hero {
+        padding: 4rem 0 3rem;
+      }
+
+      .section {
+        padding: 4rem 0;
+      }
+
+      .resource-grid,
+      .stat-row {
+        grid-template-columns: 1fr;
+      }
+
+      .highlight-card {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <nav class="container nav" aria-label="Primary navigation">
+      <a class="brand" href="#">Learning to Label</a>
+      <div class="nav-links">
+        <a href="#abstract">Abstract</a>
+        <a href="#method">Method</a>
+        <a href="#results">Results</a>
+        <a href="#resources">Resources</a>
+        <a href="#citation">Citation</a>
+      </div>
+    </nav>
+  </div>
+
+  <header class="hero">
+    <div class="container">
+      <div class="badge">Accepted to ICML 2026</div>
+      <h1 class="hero-title">
+        Learning to Label: <span class="soft">A Reinforced Self-Evolving Framework</span> for Semi-supervised Referring Expression Segmentation
+      </h1>
+      <p class="hero-subtitle">
+        A reinforced self-evolving framework for reliable pseudo-label construction in semi-supervised referring expression segmentation.
+      </p>
+
+      <div class="authors">
+        <a href="#">Runlong Cao<sup>1</sup></a>
+        <a href="#">Ying Zang<sup>*2</sup></a>
+        <a href="#">Chuanwei Zhou<sup>3</sup></a>
+        <a href="#">Tianrun Chen<sup>4</sup></a>
+        <a href="#">Tong Zhang<sup>1</sup></a>
+        <a href="#">Zhen Cui<sup>5</sup></a>
+        <a href="#">Chunyan Xu<sup>*1</sup></a>
+      </div>
+      <div class="affiliations">
+        <sup>1</sup> Nanjing University of Science and Technology &nbsp;|&nbsp;
+        <sup>2</sup> Huzhou Normal University &nbsp;|&nbsp;
+        <sup>3</sup> Nanjing University of Posts and Telecommunications<br>
+        <sup>4</sup> Zhejiang University &nbsp;|&nbsp;
+        <sup>5</sup> Beijing Normal University<br>
+        <span><sup>*</sup> Corresponding authors</span>
+      </div>
+
+      <div class="btn-group">
+        <a class="btn btn-primary" href="paper.pdf">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+          Paper
+        </a>
+        <a class="btn btn-outline" href="#" aria-disabled="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+          </svg>
+          Code Coming Soon
+        </a>
+        <a class="btn btn-outline" href="#citation">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"></path>
+          </svg>
+          BibTeX
+        </a>
+      </div>
+
+      <div class="container-narrow teaser-wrap">
+        <div class="teaser-inner">
+          <div class="hero-figures">
+            <img class="paper-preview" src="images/head1.png" alt="L2L prediction score comparison between baseline and MLLM">
+            <img class="paper-preview" src="images/fig2.png" alt="Performance comparisons on RefCOCO, RefCOCO+, and RefCOCOg">
+          </div>
+          <div class="teaser-copy">
+          <h2>Learning Reliable Labels from Sparse Supervision</h2>
+          <p>
+              L2L treats pseudo-label construction as a learnable decision-making process. It uses multimodal semantic-spatial priors, learnable guidance signals, and reinforced pseudo-label selection to progressively improve pixel-level supervision for referring expression segmentation.
+          </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="section section-alt" id="abstract">
+    <div class="container abstract-grid">
+      <div>
+        <div class="section-header" style="text-align: left;">
+          <h2 class="section-title">Abstract</h2>
+        </div>
+        <p class="abstract-text">
+          Semi-supervised referring expression segmentation (SS-RES) aims to achieve precise pixel-level language grounding under limited annotation, yet suffers from limited supervision and unreliable pseudo-labels when exploiting unlabeled image-text pairs. In this work, we propose Learning to Label, a reinforced self-evolving framework (L2L) that casts pseudo-label construction as a learnable decision-making process. To build foundational understanding, we leverage a multimodal large language model to extract semantic-spatial priors, which are instantiated as initial soft segmentation proposals and elevated, together with textual cues, into learnable guidance signals that condition a hierarchical segmentation network. To ensure stable learning, reinforced pseudo-label selection is formulated as an exploratory decision process that adaptively rewards high-utility pixel-level supervision based on multimodal priors and model predictions. This reinforced self-evolving loop enables joint optimization of the segmentation model and pseudo-labels, progressively enhancing label reliability under sparse supervision. Extensive experiments on RefCOCO, RefCOCO+, and RefCOCOg demonstrate improvements over existing methods, validating its effectiveness and generalization.
+        </p>
+      </div>
+
+      <div>
+        <div class="highlights">
+          <div class="highlight-card">
+            <div class="highlight-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M12 2 2 7l10 5 10-5-10-5z"></path>
+                <path d="m2 17 10 5 10-5"></path>
+                <path d="m2 12 10 5 10-5"></path>
+              </svg>
+            </div>
+            <div>
+              <h3>Learnable Labeling</h3>
+              <p>Casts pseudo-label construction as a learnable decision-making process rather than a fixed heuristic.</p>
+            </div>
+          </div>
+
+          <div class="highlight-card">
+            <div class="highlight-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+            </div>
+            <div>
+              <h3>Multimodal Priors</h3>
+              <p>Uses an MLLM to extract semantic-spatial priors and convert them into guidance for hierarchical segmentation.</p>
+            </div>
+          </div>
+
+          <div class="highlight-card">
+            <div class="highlight-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 6v6l4 2"></path>
+              </svg>
+            </div>
+            <div>
+              <h3>Self-Evolving Loop</h3>
+              <p>Jointly optimizes the segmentation model and pseudo-labels to improve label reliability under sparse supervision.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat">
+            <span class="stat-value">3</span>
+            <span class="stat-label">Benchmarks</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">ICML</span>
+            <span class="stat-label">2026</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="method">
+    <div class="container-narrow">
+      <div class="section-header">
+        <h2 class="section-title">Methodology</h2>
+      </div>
+
+      <div class="method-list">
+        <div>
+          <h3 class="method-title">Overview</h3>
+          <div class="image-card">
+            <object class="pdf-frame" data="images/main.pdf" type="application/pdf" aria-label="Overview of the Learning to Label framework">
+              <img src="images/main.png" alt="Overview of the Learning to Label framework">
+            </object>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="results">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Results</h2>
+      </div>
+
+      <div class="results-grid">
+        <div>
+          <h3 class="method-title">Main Results</h3>
+          <div class="image-card">
+            <img src="images/table1.png" alt="Table 1 main results">
+          </div>
+        </div>
+
+        <div>
+          <h3 class="method-title">Analysis</h3>
+          <div class="analysis-grid">
+            <div class="image-card analysis-card">
+              <h4>RefCOCO</h4>
+              <object class="pdf-frame" data="images/ref_sup_vis.pdf" type="application/pdf" aria-label="Qualitative visualization on RefCOCO">
+                <img src="images/ref_sup_vis.png" alt="Qualitative visualization on RefCOCO">
+              </object>
+            </div>
+            <div class="image-card analysis-card">
+              <h4>RefCOCO+</h4>
+              <object class="pdf-frame" data="images/ref+_sup_vis.pdf" type="application/pdf" aria-label="Qualitative visualization on RefCOCO+">
+                <img src="images/ref+_sup_vis.png" alt="Qualitative visualization on RefCOCO+">
+              </object>
+            </div>
+            <div class="image-card analysis-card">
+              <h4>RefCOCOg</h4>
+              <object class="pdf-frame" data="images/refg_sup_vis.pdf" type="application/pdf" aria-label="Qualitative visualization on RefCOCOg">
+                <img src="images/refg_sup_vis.png" alt="Qualitative visualization on RefCOCOg">
+              </object>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="resources">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Resources</h2>
+      </div>
+
+      <div class="resource-grid">
+        <a class="resource-card" href="paper.pdf">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+          <h3>Paper</h3>
+          <p>PDF of Learning to Label.</p>
+        </a>
+
+        <a class="resource-card" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+          </svg>
+          <h3>Code</h3>
+          <p>Add the GitHub repository link when released.</p>
+        </a>
+
+        <a class="resource-card" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+            <path d="M8 17V9"></path>
+            <path d="M12 17V7"></path>
+            <path d="M16 17v-5"></path>
+          </svg>
+          <h3>Poster / Slides</h3>
+          <p>Optional conference materials can live here.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section citation" id="citation">
+    <div class="container-narrow">
+      <div class="section-header">
+        <h2 class="section-title">Citation</h2>
+      </div>
+      <p style="text-align: center; color: var(--muted);">If you find this work useful, please consider citing it.</p>
+      <div class="citation-box">
+        <div class="citation-head">
+          <strong>BibTeX</strong>
+          <button class="copy-btn" id="copyBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span>Copy</span>
+          </button>
+        </div>
+<pre id="bibtex">@inproceedings{cao2026learning,
+  title={Learning to Label: A Reinforced Self-Evolving Framework for Semi-supervised Referring Expression Segmentation},
+  author={Cao, Runlong and Zang, Ying and Zhou, Chuanwei and Chen, Tianrun and Zhang, Tong and Cui, Zhen and Xu, Chunyan},
+  booktitle={Proceedings of the 43rd International Conference on Machine Learning},
+  year={2026}
+}</pre>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p>© 2026 Runlong Cao. ICML 2026 project page.</p>
+    </div>
+  </footer>
+
+  <script>
+    const copyBtn = document.getElementById("copyBtn");
+    copyBtn.addEventListener("click", () => {
+      const bibtex = document.getElementById("bibtex").innerText;
+      navigator.clipboard.writeText(bibtex).then(() => {
+        copyBtn.classList.add("copied");
+        copyBtn.querySelector("span").textContent = "Copied!";
+        setTimeout(() => {
+          copyBtn.classList.remove("copied");
+          copyBtn.querySelector("span").textContent = "Copy";
+        }, 1800);
+      });
+    });
+  </script>
+</body>
+</html>
